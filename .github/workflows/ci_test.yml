@@ -40,9 +40,6 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.6'
       - name: Run armory TF1 docker tests
         run: |
           pip install -r requirements.txt
