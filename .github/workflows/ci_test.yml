@@ -121,39 +121,35 @@ jobs:
           run --no-docker tests/scenarios/pytorch/image_classification.json
   flake8-test:
     name: Flake8
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
       - name: install flake8
         run: pip install flake8
       - name: Run flake8
         run: flake8
   black-test:
     name: Black code format
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
       - name: install black
         run: pip install black==19.10b0
       - name: Ensure contributor used ("black ./") before commit
         run: black --check ./
   yamllint-test:
     name: Yamllint
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
       - name: install yamllint
         run: pip install yamllint
       - name: Run yamllint
         run: yamllint --no-warnings ./
   json-format-test:
     name: JSON file format
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
       - name: Ensure contributor used ("python -m tools.format_json") before commit
         run: python -m tools.format_json --check
