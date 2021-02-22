@@ -16,25 +16,48 @@ env:
   DOCKER_BUILDKIT: 1
 
 jobs:
-  pytest-host:
-    name: PyTest Host
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: ['ubuntu-18.04', 'windows-latest', 'macos-latest']
-        python-version: ['3.6']
-      fail-fast: false
+
+# run the simple syntactic tests first
+# the actions/python call is not for self-hosted because we know it is ubuntu 18.04 and python 3.6
+
+  flake8-test:
+    name: Flake8
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Run armory host tests
-        shell: bash
-        run: |
-          pip install -r requirements.txt
-          pip install -r test-requirements.txt
-          pytest -s ./tests/test_host/
+      - name: install flake8
+        run: pip install flake8
+      - name: Run flake8
+        run: flake8
+  black-test:
+    name: Black code format
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: install black
+        run: pip install black==19.10b0
+      - name: Ensure contributor used ("black ./") before commit
+        run: black --check ./
+  yamllint-test:
+    name: Yamllint
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: install yamllint
+        run: pip install yamllint
+      - name: Run yamllint
+        run: yamllint --no-warnings ./
+  json-format-test:
+    name: JSON file format
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Ensure contributor used ("python -m tools.format_json") before commit
+        run: python -m tools.format_json --check
+
+# TODO: will self-hosted parallelize any tasks?
+
+
   pytest-tf1:
     name: PyTest TF1
     runs-on: self-hosted
@@ -119,37 +142,26 @@ jobs:
           bash docker/build-dev.sh pytorch
           docker run -w /armory_dev twosixarmory/pytorch:${version} python -m armory \
           run --no-docker tests/scenarios/pytorch/image_classification.json
-  flake8-test:
-    name: Flake8
-    runs-on: self-hosted
+
+# for platform and version matrix testing, use github hosted runners, they have all the platform/version
+# combinations
+
+  pytest-host:
+    name: PyTest Host
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-18.04', 'windows-latest', 'macos-latest']
+        python-version: ['3.6']
+      fail-fast: false
     steps:
       - uses: actions/checkout@v2
-      - name: install flake8
-        run: pip install flake8
-      - name: Run flake8
-        run: flake8
-  black-test:
-    name: Black code format
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v2
-      - name: install black
-        run: pip install black==19.10b0
-      - name: Ensure contributor used ("black ./") before commit
-        run: black --check ./
-  yamllint-test:
-    name: Yamllint
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v2
-      - name: install yamllint
-        run: pip install yamllint
-      - name: Run yamllint
-        run: yamllint --no-warnings ./
-  json-format-test:
-    name: JSON file format
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v2
-      - name: Ensure contributor used ("python -m tools.format_json") before commit
-        run: python -m tools.format_json --check
+      - uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run armory host tests
+        shell: bash
+        run: |
+          pip install -r requirements.txt
+          pip install -r test-requirements.txt
+          pytest -s ./tests/test_host/
