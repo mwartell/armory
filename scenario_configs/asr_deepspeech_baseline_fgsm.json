@@ -52,6 +52,10 @@
         },
         "weights_file": null,
         "wrapper_kwargs": {
+            "clip_values": [
+                -1,
+                1
+            ],
             "pretrained_model": "librispeech"
         }
     },
@@ -61,7 +65,7 @@
         "name": "AutomaticSpeechRecognition"
     },
     "sysconfig": {
-        "docker_image": "twosixarmory/pytorch-deepspeech:0.12.2-dev",
+        "docker_image": "twosixarmory/pytorch-deepspeech:0.13.0-dev",
         "external_github_repo": "hkakitani/deepspeech.pytorch",
         "gpus": "all",
         "local_repo_path": null,

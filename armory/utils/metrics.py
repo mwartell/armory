@@ -17,7 +17,7 @@ import cProfile
 import pstats
 
 from armory.data.adversarial_datasets import ADV_PATCH_MAGIC_NUMBER_LABEL_ID
-from armory.data.adversarial.apricot_dev_metadata import APRICOT_PATCHES
+from armory.data.adversarial.apricot_metadata import APRICOT_PATCHES
 
 
 logger = logging.getLogger(__name__)
@@ -81,8 +81,12 @@ def norm(x, x_adv, ord):
     """
     x = np.asarray(x)
     x_adv = np.asarray(x_adv)
-    # cast to float first to prevent overflow errors
-    diff = (x.astype(float) - x_adv.astype(float)).reshape(x.shape[0], -1)
+    # elevate to 64-bit types first to prevent overflow errors
+    assert not (
+        np.iscomplexobj(x) ^ np.iscomplexobj(x_adv)
+    ), "x and x_adv mix real/complex types"
+    dtype = complex if np.iscomplexobj(x) else float
+    diff = (x.astype(dtype) - x_adv.astype(dtype)).reshape(x.shape[0], -1)
     values = np.linalg.norm(diff, ord=ord, axis=1)
     # normalize l0 norm by number of elements in array
     if ord == 0:
@@ -129,14 +133,18 @@ def l0(x, x_adv):
 
 
 def _snr(x_i, x_adv_i):
-    x_i = np.asarray(x_i, dtype=float)
-    x_adv_i = np.asarray(x_adv_i, dtype=float)
+    assert not (
+        np.iscomplexobj(x_i) ^ np.iscomplexobj(x_adv_i)
+    ), "x_i and x_adv_i mix real/complex types"
+    dtype = complex if np.iscomplexobj(x_i) else float
+    x_i = np.asarray(x_i, dtype=dtype)
+    x_adv_i = np.asarray(x_adv_i, dtype=dtype)
     if x_i.shape != x_adv_i.shape:
         raise ValueError(f"x_i.shape {x_i.shape} != x_adv_i.shape {x_adv_i.shape}")
-    elif x_i.ndim != 1:
-        raise ValueError("_snr input must be single dimensional (not multichannel)")
-    signal_power = (x_i ** 2).mean()
-    noise_power = ((x_i - x_adv_i) ** 2).mean()
+    signal_power = (np.abs(x_i) ** 2).mean()
+    noise_power = (np.abs(x_i - x_adv_i) ** 2).mean()
+    if noise_power == 0:
+        return np.inf
     return signal_power / noise_power
 
 
@@ -450,8 +458,8 @@ def _intersection_over_union(box_1, box_2):
     assert box_1[3] >= box_1[1]
     assert box_2[3] >= box_2[1]
 
-    if all(i < 1 for i in box_1[np.where(box_1 > 0)]) ^ all(
-        i < 1 for i in box_2[np.where(box_2 > 0)]
+    if all(i <= 1.0 for i in box_1[np.where(box_1 > 0)]) ^ all(
+        i <= 1.0 for i in box_2[np.where(box_2 > 0)]
     ):
         logger.warning(
             "One set of boxes appears to be normalized while the other is not"
@@ -494,26 +502,30 @@ def object_detection_AP_per_class(list_of_ys, list_of_y_preds):
     # has the following keys "img_idx", "label", "box", as well as "score" for predicted boxes
     pred_boxes_list = []
     gt_boxes_list = []
-    for img_idx, (y, y_pred) in enumerate(zip(list_of_ys, list_of_y_preds)):
-        for gt_box_idx in range(len(y["labels"][0].flatten())):
-            label = y["labels"][0][gt_box_idx]
-            box = y["boxes"][0][gt_box_idx]
+    # Each element in list_of_y_preds is a list with length equal to batch size
+    batch_size = len(list_of_y_preds[0])
+    for batch_idx, (y, y_pred) in enumerate(zip(list_of_ys, list_of_y_preds)):
+        for img_idx in range(len(y_pred)):
+            global_img_idx = (batch_size * batch_idx) + img_idx
+            img_labels = y[img_idx]["labels"].flatten()
+            img_boxes = y[img_idx]["boxes"].reshape((-1, 4))
+            for gt_box_idx in range(img_labels.flatten().shape[0]):
+                label = img_labels[gt_box_idx]
+                box = img_boxes[gt_box_idx]
+                gt_box_dict = {"img_idx": global_img_idx, "label": label, "box": box}
+                gt_boxes_list.append(gt_box_dict)
 
-            gt_box_dict = {"img_idx": img_idx, "label": label, "box": box}
-            gt_boxes_list.append(gt_box_dict)
-
-        for pred_box_idx in range(len(y_pred["labels"].flatten())):
-            label = y_pred["labels"][pred_box_idx]
-            box = y_pred["boxes"][pred_box_idx]
-            score = y_pred["scores"][pred_box_idx]
-
-            pred_box_dict = {
-                "img_idx": img_idx,
-                "label": label,
-                "box": box,
-                "score": score,
-            }
-            pred_boxes_list.append(pred_box_dict)
+            for pred_box_idx in range(y_pred[img_idx]["labels"].flatten().shape[0]):
+                pred_label = y_pred[img_idx]["labels"][pred_box_idx]
+                pred_box = y_pred[img_idx]["boxes"][pred_box_idx]
+                pred_score = y_pred[img_idx]["scores"][pred_box_idx]
+                pred_box_dict = {
+                    "img_idx": global_img_idx,
+                    "label": pred_label,
+                    "box": pred_box,
+                    "score": pred_score,
+                }
+                pred_boxes_list.append(pred_box_dict)
 
     # Union of (1) the set of all true classes and (2) the set of all predicted classes
     set_of_class_ids = set([i["label"] for i in gt_boxes_list]) | set(
@@ -530,7 +542,7 @@ def object_detection_AP_per_class(list_of_ys, list_of_y_preds):
     # Compute AP for each class
     for class_id in set_of_class_ids:
 
-        # Buiild lists that contain all the predicted/ground-truth boxes with a
+        # Build lists that contain all the predicted/ground-truth boxes with a
         # label of class_id
         class_predicted_boxes = []
         class_gt_boxes = []
@@ -614,8 +626,12 @@ def object_detection_AP_per_class(list_of_ys, list_of_y_preds):
         # Total number of gt boxes with a label of class_id
         total_gt_boxes = len(class_gt_boxes)
 
-        recalls = tp_cumulative_sum / (total_gt_boxes + 1e-6)
-        precisions = tp_cumulative_sum / (tp_cumulative_sum + fp_cumulative_sum + 1e-6)
+        if total_gt_boxes > 0:
+            recalls = tp_cumulative_sum / total_gt_boxes
+        else:
+            recalls = np.zeros_like(tp_cumulative_sum)
+
+        precisions = tp_cumulative_sum / (tp_cumulative_sum + fp_cumulative_sum + 1e-8)
 
         interpolated_precisions = np.zeros(len(RECALL_POINTS))
         # Interpolate the precision at each recall level by taking the max precision for which
@@ -669,30 +685,36 @@ def apricot_patch_targeted_AP_per_class(list_of_ys, list_of_y_preds):
     # has the following keys "img_idx", "label", "box", as well as "score" for predicted boxes
     patch_boxes_list = []
     overlappping_pred_boxes_list = []
-    for img_idx, (y, y_pred) in enumerate(zip(list_of_ys, list_of_y_preds)):
-        idx_of_patch = np.where(y["labels"] == ADV_PATCH_MAGIC_NUMBER_LABEL_ID)
-        patch_box = y["boxes"][idx_of_patch].flatten()
-        patch_id = int(y["patch_id"][idx_of_patch])
-        patch_target_label = APRICOT_PATCHES[patch_id]["adv_target"]
-        patch_box_dict = {
-            "img_idx": img_idx,
-            "label": patch_target_label,
-            "box": patch_box,
-        }
-        patch_boxes_list.append(patch_box_dict)
+    # Each element in list_of_y_preds is a list with length equal to batch size
+    batch_size = len(list_of_y_preds[0])
+    for batch_idx, (y, y_pred) in enumerate(zip(list_of_ys, list_of_y_preds)):
+        for img_idx in range(len(y_pred)):
+            global_img_idx = (batch_size * batch_idx) + img_idx
+            idx_of_patch = np.where(
+                y[img_idx]["labels"].flatten() == ADV_PATCH_MAGIC_NUMBER_LABEL_ID
+            )[0]
+            patch_box = y[img_idx]["boxes"].reshape((-1, 4))[idx_of_patch].flatten()
+            patch_id = int(y[img_idx]["patch_id"].flatten()[idx_of_patch])
+            patch_target_label = APRICOT_PATCHES[patch_id]["adv_target"]
+            patch_box_dict = {
+                "img_idx": global_img_idx,
+                "label": patch_target_label,
+                "box": patch_box,
+            }
+            patch_boxes_list.append(patch_box_dict)
 
-        for pred_box_idx in range(len(y_pred["labels"].flatten())):
-            box = y_pred["boxes"][pred_box_idx]
-            if _intersection_over_union(box, patch_box) > IOU_THRESHOLD:
-                label = y_pred["labels"][pred_box_idx]
-                score = y_pred["scores"][pred_box_idx]
-                pred_box_dict = {
-                    "img_idx": img_idx,
-                    "label": label,
-                    "box": box,
-                    "score": score,
-                }
-                overlappping_pred_boxes_list.append(pred_box_dict)
+            for pred_box_idx in range(y_pred[img_idx]["labels"].size):
+                box = y_pred[img_idx]["boxes"][pred_box_idx]
+                if _intersection_over_union(box, patch_box) > IOU_THRESHOLD:
+                    label = y_pred[img_idx]["labels"][pred_box_idx]
+                    score = y_pred[img_idx]["scores"][pred_box_idx]
+                    pred_box_dict = {
+                        "img_idx": global_img_idx,
+                        "label": label,
+                        "box": box,
+                        "score": score,
+                    }
+                    overlappping_pred_boxes_list.append(pred_box_dict)
 
     # Union of (1) the set of classes targeted by patches and (2) the set of all classes
     # predicted at a location that overlaps the patch in the image
@@ -785,8 +807,12 @@ def apricot_patch_targeted_AP_per_class(list_of_ys, list_of_y_preds):
         # Total number of patch boxes with a label of class_id
         total_patch_boxes = len(class_patch_boxes)
 
-        recalls = tp_cumulative_sum / (total_patch_boxes + 1e-6)
-        precisions = tp_cumulative_sum / (tp_cumulative_sum + fp_cumulative_sum + 1e-6)
+        if total_patch_boxes > 0:
+            recalls = tp_cumulative_sum / total_patch_boxes
+        else:
+            recalls = np.zeros_like(tp_cumulative_sum)
+
+        precisions = tp_cumulative_sum / (tp_cumulative_sum + fp_cumulative_sum + 1e-8)
 
         interpolated_precisions = np.zeros(len(RECALL_POINTS))
         # Interpolate the precision at each recall level by taking the max precision for which
@@ -1021,7 +1047,7 @@ class MetricsLogger:
                 "object_detection_AP_per_class",
                 "apricot_patch_targeted_AP_per_class",
             ]:
-                metric.append_inputs(y, y_pred[0])
+                metric.append_inputs(y, y_pred)
             else:
                 metric.append(y, y_pred)
 

@@ -48,11 +48,11 @@ The model is an ImageNet-pretrained DenseNet-121 that is fine-tuned on RESISC-45
     (Lp-norms, Wasserstein distance)
   * Derivative metrics - see end of document 
   * Additional metrics specific to the scenario or that are informative may be added later
-* **Baseline Model Performance: (results derived using Armory < v0.10)**
+* **Baseline Model Performance: (results obtained using Armory < v0.10)**
   * Baseline Clean Top-1 Accuracy: 93%
   * Baseline Attacked (Universal Perturbation) Top-1 Accuracy: 6%
   * Baseline Attacked (Universal Patch) Top-1 Accuracy: 23%
-* **Baseline Defense Performance: (results derived using Armory < v0.10)**
+* **Baseline Defense Performance: (results obtained using Armory < v0.10)**
 Baseline defense is art_experimental.defences.JpegCompressionNormalized(clip_values=(0.0, 1.0), quality=50, channel_index=3, apply_fit=False,
 apply_predict=True, means=[0.36386173189316956, 0.38118692953271804, 0.33867067558870334], stds=[0.20350874, 0.18531173, 0.18472934]) - see
 resisc45_baseline_densenet121_adversarial.json for example usage.
@@ -143,25 +143,43 @@ The provided model is pre-trained on the Kinetics dataset and fine-tuned on UCF1
 * **Baseline Attacks:**
   * PGD (Linf (eps <= 16/255), L2 (eps <= 8/255 * sqrt(N)), N=# of pixels in a single input)
   * Adversarial Patch (size <20% of video area)
-  * [Frame Saliency](https://arxiv.org/abs/1811.11875)
+  * [Frame Saliency](https://arxiv.org/abs/1811.11875) (Linf (eps <= 4/255))
 * **Baseline Defense**: Video Compression
-* **Baseline Model Performance: (results derived using Armory < v0.10)**
-  * Baseline Clean Top-1 Accuracy: 93%
-  * Baseline Clean Top-5 Accuracy: 99%
-  * Baseline Attacked (Perturbation) Top-1 Accuracy: 4%
-  * Baseline Attacked (Perturbation) Top-5 Accuracy: 35%
-  * Baseline Attacked (Patch) Top-1 Accuracy: 24%
-  * Baseline Attacked (Patch) Top-5 Accuracy: 97%
-* **Baseline Defense Performance: (results derived using Armory < v0.10)**
-Baseline defense is art_experimental.defences.JpegCompression5D(clip_values=(0.0, 255.0), quality=50, channel_index=3, apply_fit=False,
-apply_predict=True, means=[114.7748, 107.7354, 99.475], transpose=[1, 2, 3, 0]) - see ucf101_baseline_adversarial.json for example usage.
-Baseline defense performance is evaluated for a grey-box attack: adversarial examples generated on undefended baseline model evaluated on defended model.
-  * Baseline Clean Top-1 Accuracy: 88%
-  * Baseline Clean Top-5 Accuracy: 98%
-  * Baseline Attacked (Perturbation) Top-1 Accuracy: 65%
-  * Baseline Attacked (Perturbation) Top-5 Accuracy: 96%
-  * Baseline Attacked (Patch) Top-1 Accuracy: 86%
-  * Baseline Attacked (Patch) Top-5 Accuracy: 97%
+* **Baseline Model Performance: (Perturbation and Patch results obtained using Armory < v0.10; 
+  Frame Saliency results obtained using Armory v0.12.2)**
+  * Baseline Clean Top-1 Accuracy: 93% (all test examples)
+  * Baseline Clean Top-5 Accuracy: 99% (all test examples)
+  * Baseline Attacked (Perturbation, Linf eps=10/255) Top-1 Accuracy: 4% (all test examples)
+  * Baseline Attacked (Perturbation, Linf eps=10/255) Top-5 Accuracy: 35% (all test examples)
+  * Baseline Attacked (Patch, area=10%) Top-1 Accuracy: 24% (all test examples)
+  * Baseline Attacked (Patch, area=10%) Top-5 Accuracy: 97% (all test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.015) Top-1 Accuracy: 0% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.015) Top-5 Accuracy: 95% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.008) Top-1 Accuracy: 0.1% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.008) Top-5 Accuracy: 95% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.004) Top-1 Accuracy: 0.3% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.004) Top-5 Accuracy: 95% (100 test examples)
+* **Baseline Defense Performance: (Perturbation and Patch results obtained using Armory < v0.10;
+  Frame Saliency results obtained using Armory v0.12.2)**
+Baseline defense is `art_experimental.defences.video_compression_normalized(apply_fit=false, apply_predict=true,
+channels_first=false, constant_rate_factor=28, video_format="avi")`
+Perturbation and Patch baseline defense performance is evaluated for a grey-box attack: 
+adversarial examples generated on undefended baseline model evaluated on defended model.
+Frame Saliency baseline defense performance is evaluated for a white-box attack.
+  * Baseline Clean Top-1 Accuracy: 88% (all test examples)\*
+  * Baseline Clean Top-5 Accuracy: 98% (all test examples)\*
+  * Baseline Attacked (Perturbation, Linf eps=10/255) Top-1 Accuracy: 65% (all test examples)\*
+  * Baseline Attacked (Perturbation, Linf eps=10/255) Top-5 Accuracy: 96% (all test examples)\*
+  * Baseline Attacked (Patch, area=10%) Top-1 Accuracy: 86% (all test examples)\*
+  * Baseline Attacked (Patch, area=10%) Top-5 Accuracy: 97% (all test examples)\*
+  * Baseline Attacked (Frame Saliency, Linf eps=0.015) Top-1 Accuracy: 38% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.015) Top-5 Accuracy: 99% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.008) Top-1 Accuracy: 67% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.008) Top-5 Accuracy: 100% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.004) Top-1 Accuracy: 82% (100 test examples)
+  * Baseline Attacked (Frame Saliency, Linf eps=0.004) Top-5 Accuracy: 100% (100 test examples)\
+\* Defended results were obtained prior to the implementation of video compression and 
+used JPEG compression (quality=50) on each frame.
 
 ### German traffic sign poisoned image classification
 
@@ -250,10 +268,28 @@ may also be loaded by the model.
   [Kenansville attack](https://arxiv.org/abs/1910.05262).
   * (Secondary) other "per-example" attacks such as PGD, FGM, may be considered for completeness.
 * **Baseline Defense**: MP3 Compression
-* **Baseline Model Performance:**
-To be added
-* **Baseline Defense Performance:**
-To be added
+* **Baseline Model Performance: (results obtained using Armory v0.12.2)**
+  * Baseline WER: 9.76% (1000 test examples)
+  * Baseline Untargeted Attack (SNR = 20dB) WER: 27.28% (1000 test examples)
+  * Baseline Untargeted Attack (SNR = 30dB) WER: 11.14% (1000 test examples)
+  * Baseline Untargeted Attack (SNR = 40dB) WER: 9.92% (1000 test examples)
+  * Baseline Attack (Imperceptible ASR attack, max_iter_1st_stage = 100) WER: 62.54%, SNR: 30.45 dB (320 examples)
+  * Baseline Attack (Imperceptible ASR attack, max_iter_1st_stage = 250) WER: 20.17%, SNR: 29.14 dB (320 examples)
+  * Baseline Attack (Imperceptible ASR attack, max_iter_1st_stage = 400) WER: 11.36%, SNR: 29.48 dB (320 examples)
+  * Baseline FGSM Attack (SNR = 20dB) WER: 30.78% (2620 test examples)
+  * Baseline FGSM Attack (SNR = 30dB) WER: 20.87% (2620 test examples)
+  * Baseline FGSM Attack (SNR = 40dB) WER: 16.07% (2620 test examples)
+* **Baseline Defense Performance: (results obtained using Armory v0.12.2)**\
+Baseline defense is art_experimental.defences.mp3_compression_channelized()\
+Baseline defense performance is evaluated for both black-box (untargeted) and white-box (targeted) attacks.
+  * Baseline WER: 12.98% (1000 test examples)
+  * Baseline Untargeted Attack (SNR = 20dB) WER: 35.58% (1000 test examples)
+  * Baseline Untargeted Attack (SNR = 30dB) WER: 16.71% (1000 test examples)
+  * Baseline Untargeted Attack (SNR = 40dB) WER: 13.73% (1000 test examples)
+  * Baseline Attack (Imperceptible ASR attack) To be added
+  * Baseline FGSM Attack (SNR = 20dB) WER: 33.16% (2620 test examples)
+  * Baseline FGSM Attack (SNR = 30dB) WER: 23.32% (2620 test examples)
+  * Baseline FGSM Attack (SNR = 40dB) WER: 18.62% (2620 test examples)
 
 ### so2sat multimodal image classification
 
@@ -288,11 +324,28 @@ networks are fused to produce a single prediction output.
 * **Baseline Attacks:**
   * (Primary) Adversarial Patch
   * (Secondary) other "per-example" attacks such as PGD, FGM, may also be considered for completeness.
-* **Baseline Defense**: JPEG Compression
-* **Baseline Model Performance:**
-To be added
-* **Baseline Defense Performance:**
-To be added
+* **Baseline Defense**: JPEG Compression for Multi-Channel
+* **Baseline Model Performance: (results obtained using Armory v0.12.2)**
+  * Baseline accuracy: 55.59% (all test examples)
+  * Baseline accuracy: 58.30% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 5% patch, EO channels) accuracy: 0.5% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 10% patch, EO channels) accuracy: 0.0% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 15% patch, EO channels) accuracy: 0.0% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 5% patch, SAR channels) accuracy: 1.0% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 10% patch, SAR channels) accuracy: 2.7% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 15% patch, SAR channels) accuracy: 0.7% (1000 test examples)
+* **Baseline Defense Performance: (results obtained using Armory v0.12.2)**\
+Baseline defense is art_experimental.defences.jpeg_compression_multichannel_image(clip_values=(0.0, 1.0),
+quality=95, channel_first=False, apply_fit=False, apply_predict=True,
+mins=[-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0,], ranges=[2,2,2,2,1,1,1,1,1,1,1,1,1,1]).\
+Baseline defense performance is evaluated for a white-box attack.
+  * Baseline accuracy: 33.90% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 5% patch, EO channels) accuracy: 0.9% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 10% patch, EO channels) accuracy: 0.0% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 15% patch, EO channels) accuracy: 0.0% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 5% patch, SAR channels) accuracy: 1.4% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 10% patch, SAR channels) accuracy: 1.7% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 15% patch, SAR channels) accuracy: 0.3% (1000 test examples)
 
 ### xView object detection
 
@@ -325,19 +378,18 @@ on MSCOCO objects and fine-tuned on xView.
   * (Primary) Masked PGD
   * (Secondary) other "per-example" attacks such as PGD, FGM, may be considered.
 * **Baseline Defense**: JPEG Compression
-* **Baseline Model Performance: (results derived using Armory v0.12)**
-  * Baseline mAP: 27.53% (all test examples)
-  * Baseline mAP: 26.79% (1000 test examples)
-  * Baseline Attacked (Masked PGD, 50x50 patch) mAP: 9.20% (1000 test examples)
-  * Baseline Attacked (Masked PGD, 75x75 patch) mAP: 6.89% (1000 test examples)
-  * Baseline Attacked (Masked PGD, 100x100 patch) mAP: 6.56% (1000 test examples)
-* **Baseline Defense Performance: (results derived using Armory v0.12)**\
+* **Baseline Model Performance: (results obtained using Armory v0.13)**
+  * Baseline mAP: 27.61% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 50x50 patch) mAP: 10.44% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 75x75 patch) mAP: 7.57% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 100x100 patch) mAP: 6.89% (1000 test examples)
+* **Baseline Defense Performance: (results obtained using Armory v0.13)**\
 Baseline defense is art_experimental.defences.JpegCompressionNormalized(clip_values=(0.0, 1.0), quality=50,
 channel_index=3, apply_fit=False, apply_predict=True).\
 Baseline defense performance is evaluated for a white-box attack.
-  * Baseline mAP: 21.75% (1000 test examples)
-  * Baseline Attacked (Masked PGD, 50x50 patch) mAP: 11.89% (1000 test examples)
-  * Baseline Attacked (Masked PGD, 75x75 patch) mAP: 9.95% (1000 test examples)
+  * Baseline mAP: 22.64% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 50x50 patch) mAP: 11.52% (1000 test examples)
+  * Baseline Attacked (Masked PGD, 75x75 patch) mAP: 9.80% (1000 test examples)
   * Baseline Attacked (Masked PGD, 100x100 patch) mAP: 9.03% (1000 test examples)
 
 ### APRICOT object detection
@@ -366,10 +418,15 @@ research - the pretrained weights may not be robust, so performers can change th
 * **Baseline Attacks:**
   * The patches were generated using variants of [ShapeShifter](https://arxiv.org/abs/1804.05810)
 * **Baseline Defense**: JPEG Compression
-* **Baseline Model Performance:**
-To be added
-* **Baseline Defense Performance:**
-To be added
+* **Baseline Model Performance: (results obtained using Armory v0.13)**
+  * Baseline MSCOCO Objects mAP: 8.76% (all test examples)
+  * Baseline Targeted Patch mAP: 5.70% (all test examples)
+* **Baseline Defense Performance: (results obtained using Armory v0.13)**\
+Baseline defense is art_experimental.defences.jpeg_compression_normalized(clip_values=(0.0, 1.0), quality=10,
+channel_index=3, apply_fit=False, apply_predict=True).\
+Baseline defense performance is evaluated for a transfer attack.
+  * Baseline MSCOCO Objects mAP: 7.83% (all test examples)
+  * Baseline Targeted Patch mAP: 4.59% (all test examples)
 
 ## Academic Scenarios
 
@@ -400,3 +457,6 @@ An [example of doing this](https://github.com/twosixlabs/armory-example/blob/mas
 
 ## Derivative metrics
 ![alt text](https://user-images.githubusercontent.com/18154355/80718651-691fb780-8ac8-11ea-8dc6-94d35164d494.png "Derivative Metrics")
+
+## Exporting Samples
+Scenarios can be configured to export benign and adversarial image, video, and audio samples.  This feature is enabled by setting the `export_samples` field under `scenario` in the configuration file to a non-zero integer.  The specified number of samples will be saved in the output directory for this evaluation, along with a pickle file which stores the ground truth and model output for each sample.  For video files, samples are saved both in a compressed video format and frame-by-frame.

@@ -48,6 +48,7 @@ MONGO_COLLECTION = "scenario_results"
 class Scenario(abc.ABC):
     def __init__(self):
         self.check_run = False
+        self.scenario_output_dir = None
 
     def evaluate(
         self,
@@ -60,6 +61,7 @@ class Scenario(abc.ABC):
         """
         Evaluate a config for robustness against attack.
         """
+        self._set_output_dir(config)
         if self.check_run:
             # Modify dataset entries
             config["dataset"]["check_run"] = True
@@ -134,18 +136,16 @@ class Scenario(abc.ABC):
         Save json-formattable output to a file
         """
 
-        runtime_paths = paths.runtime_paths()
-        scenario_output_dir = os.path.join(
-            runtime_paths.output_dir, output["config"]["eval_id"]
-        )
-
         override_name = output["config"]["sysconfig"].get("output_filename", None)
         scenario_name = (
             override_name if override_name else output["config"]["scenario"]["name"]
         )
         filename = f"{scenario_name}_{output['timestamp']}.json"
-        logger.info(f"Saving evaluation results saved to <output_dir>/{filename}")
-        with open(os.path.join(scenario_output_dir, filename), "w") as f:
+        logger.info(
+            f"Saving evaluation results to {self.scenario_output_dir}/{filename} path "
+            f"inside container."
+        )
+        with open(os.path.join(self.scenario_output_dir, filename), "w") as f:
             f.write(json.dumps(output, sort_keys=True, indent=4) + "\n")
 
     def _send_to_mongo(self, mongo_host: str, output: dict):
@@ -168,6 +168,12 @@ class Scenario(abc.ABC):
             col.insert_one(output)
         except pymongo.errors.PyMongoError as e:
             logger.error(f"Encountered error {e} sending evaluation results to MongoDB")
+
+    def _set_output_dir(self, config):
+        runtime_paths = paths.runtime_paths()
+        self.scenario_output_dir = os.path.join(
+            runtime_paths.output_dir, config["eval_id"]
+        )
 
 
 def parse_config(config_path):
@@ -233,9 +239,10 @@ def run_validation(
     _scenario_setup(config)
     model_config = config.get("model")
     model_config = json.dumps(model_config)
-    pytest.main(
+    return_val = pytest.main(
         ["-x", "armory/validation/test_config/", "--model-config", model_config]
     )
+    assert return_val == pytest.ExitCode.OK, "Model configuration validation failed"
 
 
 def run_config(

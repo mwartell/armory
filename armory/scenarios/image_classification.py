@@ -20,6 +20,7 @@ from armory.utils.config_loading import (
 )
 from armory.utils import metrics
 from armory.scenarios.base import Scenario
+from armory.utils.export import SampleExporter
 
 logger = logging.getLogger(__name__)
 
@@ -135,10 +136,13 @@ class ImageClassificationTask(Scenario):
         if targeted and attack_config.get("use_label"):
             raise ValueError("Targeted attacks cannot have 'use_label'")
         if attack_type == "preloaded":
+            preloaded_split = attack_config.get("kwargs", {}).get(
+                "split", "adversarial"
+            )
             test_data = load_adversarial_dataset(
                 attack_config,
                 epochs=1,
-                split="adversarial",
+                split=preloaded_split,
                 num_batches=num_eval_batches,
                 shuffle_files=False,
             )
@@ -157,6 +161,15 @@ class ImageClassificationTask(Scenario):
             )
             if targeted:
                 label_targeter = load_label_targeter(attack_config["targeted_labels"])
+
+        export_samples = config["scenario"].get("export_samples")
+        if export_samples is not None and export_samples > 0:
+            sample_exporter = SampleExporter(
+                self.scenario_output_dir, test_data.context, export_samples
+            )
+        else:
+            sample_exporter = None
+
         for x, y in tqdm(test_data, desc="Attack"):
             with metrics.resource_context(
                 name="Attack",
@@ -191,6 +204,8 @@ class ImageClassificationTask(Scenario):
                     y_target, y_pred_adv, adversarial=True, targeted=True
                 )
             metrics_logger.update_perturbation(x, x_adv)
+            if sample_exporter is not None:
+                sample_exporter.export(x, x_adv, y, y_pred_adv)
         metrics_logger.log_task(adversarial=True)
         if targeted:
             metrics_logger.log_task(adversarial=True, targeted=True)
