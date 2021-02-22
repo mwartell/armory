@@ -37,7 +37,7 @@ jobs:
           pytest -s ./tests/test_host/
   pytest-tf1:
     name: PyTest TF1
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v1
