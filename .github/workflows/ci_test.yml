@@ -64,12 +64,9 @@ jobs:
           python -m armory run tests/scenarios/tf1/image_classification.json
   pytest-tf2:
     name: PyTest TF2
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.6'
       - name: Run armory TF2 docker tests
         run: |
           pip install -r requirements.txt
@@ -81,12 +78,9 @@ jobs:
           /opt/conda/lib/python3.7/site-packages/object_detection/builders/model_builder_tf2_test.py
   pytest-pytorch:
     name: PyTest PyTorch
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.6'
       - name: Run armory PyTorch docker tests
         run: |
           pip install -r requirements.txt
