@@ -21,20 +21,20 @@ jobs:
     name: find sacrifice packages
     runs-on: ubuntu-18.04
     steps:
+      # before purging sda1 has 19G free
       - name: get wajig
         run: sudo apt install wajig
+      - name: package purging
+        run: |
+          sudo apt purge ghc-8.8.4 ghc-8.8.4 ghc-8.6.5 azure-cli google-cloud-sdk
+          sudo apt purge google-chrome-stable firefox
+          sudo apt purge dotnet-sdk-5.0 dotnet-runtime-3.1 dotnet-runtime-3.0 dotnet-runtime-5.0
+          sudo apt autoremove
+          sudo apt clean
       - name: show me
         run: |
           df -h
           wajig large
-
-# large deletion candidates
-# android-*
-# androidsdk*
-# apache2*
-#apertium-*
-#aspnetcore-*
-#azure-*
 
 # pytest-tf1:
 #   name: PyTest TF1
