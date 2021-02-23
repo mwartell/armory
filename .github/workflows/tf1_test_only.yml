@@ -21,8 +21,8 @@ jobs:
     name: purge large unneeded packages
     runs-on: ubuntu-18.04
     steps:
-      # before purging sda1 has ~19G free, purge yields ~25G free
       - name: package purging
+        # there's about 5GB in these packages
         run: |
           sudo apt purge \
             ghc-8.8.4 ghc-8.10.3 ghc-8.6.5 \
@@ -32,7 +32,13 @@ jobs:
           sudo apt autoremove
           sudo apt clean
       - name: vaporize dotnet
+        # this directory nets us ~23GB
         run: rm -rf /usr/share/dotnet
+      - name: shed containers
+        # about 5GB of cached containers
+        run: docker rmi node:10 node:12 ubuntu:14.04 \
+          buildpack-deps:stretch buildpack-deps:buster \
+          mcr.microsoft.com/azure-pipelines/node8-typescript
       - name: show docker
         run: docker images
       - name: disk free
