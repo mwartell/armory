@@ -1,5 +1,4 @@
 ---
-# short CI task to debug self-hosted runner
 name: Mostly self-hosted
 
 on:
