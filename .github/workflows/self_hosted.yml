@@ -1,5 +1,5 @@
 ---
-name: Mostly self-hosted
+name: self-hosted CI
 
 on:
   push:
