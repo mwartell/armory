@@ -35,6 +35,8 @@ jobs:
         run: rm -rf /usr/share/dotnet
       - name: show docker
         run: docker images
+      - name: disk free
+        run: df -h /
   # pytest-tf1:
   #   name: PyTest TF1
   #   runs-on: ubuntu-18.04
