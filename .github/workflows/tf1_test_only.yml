@@ -50,12 +50,26 @@ jobs:
       - uses: actions/setup-python@v1
         with:
           python-version: "3.6"
-      - name: Run armory TF1 docker tests
+      - name: build tf1 docker containers
         run: |
           pip install -r requirements.txt
           version=$(python -m armory --version)
           bash docker/build-dev.sh tf1
-          docker run -w /armory_dev twosixarmory/tf1:${version} pytest -s ./tests/test_docker
-          docker run -w /armory_dev twosixarmory/tf1:${version} pytest -s ./tests/test_tf1
+          df -h /
+      - name: Run armory TF1 model_builder_tf1_test
+        run: |
+          df -h /
+          version=$(python -m armory --version)
           docker run -w /armory_dev twosixarmory/tf1:${version} python \
-          /opt/conda/lib/python3.7/site-packages/object_detection/builders/model_builder_tf1_test.py
+            /opt/conda/lib/python3.7/site-packages/object_detection/builders/model_builder_tf1_test.py
+      - name: Run armory TF1 test_docker
+        run: |
+          df -h /
+          version=$(python -m armory --version)
+          docker run -w /armory_dev twosixarmory/tf1:${version} pytest -s ./tests/test_docker
+      - name: Run armory TF1 test_tf1
+        run: |
+          df -h /
+          pip install -r requirements.txt
+          version=$(python -m armory --version)
+          docker run -w /armory_dev twosixarmory/tf1:${version} pytest -s ./tests/test_tf1
