@@ -19,6 +19,7 @@ env:
 jobs:
   vm-package-purge:
     name: purge large unneeded packages
+    # source https://github.com/actions/virtual-environments/blob/ubuntu18/20210211.1/images/linux/Ubuntu1804-README.md
     runs-on: ubuntu-18.04
     steps:
       - name: package purging
@@ -35,10 +36,9 @@ jobs:
         # this directory nets us ~23GB
         run: rm -rf /usr/share/dotnet
       - name: shed containers
-        # about 5GB of cached containers
+        # about 4GB of cached containers
         run: docker rmi node:10 node:12 ubuntu:14.04 \
-          buildpack-deps:stretch buildpack-deps:buster \
-          mcr.microsoft.com/azure-pipelines/node8-typescript
+          buildpack-deps:stretch buildpack-deps:buster
       - name: show docker
         run: docker images
       - name: disk free
