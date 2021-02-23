@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - name: get wajig
-        run: apt install wajig
+        run: sudo apt install wajig
       - name: show me
         run: |
           df -h
