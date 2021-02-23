@@ -17,8 +17,8 @@ env:
   DOCKER_BUILDKIT: 1
 
 jobs:
-  image-sizing:
-    name: find sacrifice packages
+  vm-package-purge:
+    name: purge large unneeded packages
     runs-on: ubuntu-18.04
     steps:
       # before purging sda1 has ~19G free, purge yields ~25G free
@@ -29,12 +29,11 @@ jobs:
           sudo apt purge dotnet-sdk-5.0 dotnet-runtime-3.1 dotnet-runtime-3.0 dotnet-runtime-5.0
           sudo apt autoremove
           sudo apt clean
-      - name: show me
-        run: df -h /
 
   pytest-tf1:
     name: PyTest TF1
     runs-on: ubuntu-18.04
+    needs: vm-package-purge
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v1
