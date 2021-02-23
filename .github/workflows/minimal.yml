@@ -62,7 +62,7 @@ jobs:
       - name: Run yamllint
         run: yamllint --no-warnings ./
 
-  TODO: will self-hosted parallelize any tasks?
+  # TODO: will self-hosted parallelize any tasks?
 
   pytest-tf1:
     name: PyTest TF1
