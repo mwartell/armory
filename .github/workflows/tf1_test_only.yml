@@ -31,10 +31,8 @@ jobs:
             dotnet-sdk-5.0 dotnet-runtime-3.1 dotnet-runtime-3.0 dotnet-runtime-5.0
           sudo apt autoremove
           sudo apt clean
-      - name: size directories
-        run: du -sh /opt/az /usr/share/dotnet
-      - name: find more packages
-        run: dpkg -l android\* php\* alibaba\*
+      - name: vaporize dotnet
+        run: rm -rf /usr/share/dotnet
       - name: show docker
         run: docker images
   # pytest-tf1:
