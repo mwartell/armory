@@ -18,7 +18,12 @@ jobs:
     name: line continuation check
     runs-on: ubuntu-18.04
     steps:
-      - name: package purging
+      - name: list packages
         run: dpkg -l apt purge ghc-8.8.4 ghc-8.10.3 ghc-8.6.5 \
-          azure-cli google-cloud-sdk \
-          sudo apt purge google-chrome-stable firefox
+          azure-cli google-cloud-sdk
+      - name: size directories
+        run: du -sh /opt/az /usr/share/dotnet
+      - name: find more packages
+        run: dpkg -l android\* php\* alibaba\*
+      - name: show docker
+        run: docker images
